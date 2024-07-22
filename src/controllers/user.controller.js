@@ -103,4 +103,87 @@ const registerUser=asyncHandler( async (req,res)=>{
        new ApiResponse(201,"Successfully registered",createdUser)
     )
 })
-export {registerUser} 
+
+const loginUser=asyncHandler(async (req,res)=>{
+    //get the details from frontend  req.body->data
+    // validation username,email
+    //check if the details is there in databse or not || finding user
+    //check password get password from frontend and match it 
+    // we will give an access token to  user 
+    //we will give an refresh token
+    // send cookie
+    // if access token gets expired then use refresh token to login again
+const generateAccessTokenandRefreshToken=async (userId)=>{
+    try {  
+        const user=await User.findById(userId)
+        const accessToken=user.generateAccessToken();
+        
+        const refreshTokens=user.generateRefreshToken();
+
+        if(refreshTokens)
+        {
+            user.refreshTokens=refreshTokens
+           await  user.save({validationBeforeSave:false})
+        }
+        return {accessToken,refreshTokens};
+    } catch (error) {
+        throw new ApiError(500,`Something went wrong :: ${error}`)
+    }
+}
+    const {username,email,password}=req.body;
+    if([username,email,password].some((field)=>field?.trim===""))
+    {
+        throw new ApiError(400,"Enter username or email")
+    }
+
+    const user=await User.findOne({
+        $or: [{username},{email}]
+    })
+
+   
+    let ispasswordcorrect
+    
+    if(!user)
+    {
+      throw new ApiError(401,"User not registered")
+    }
+    ispasswordcorrect=await user.isPasswordCorrect(password,this.password)
+
+    if(!ispasswordcorrect)
+    {
+        throw new ApiError(401,"Incorrect Password")
+    }
+   const {accessToken,refreshTokens}=await generateAccessTokenandRefreshToken(user._id);
+   const loggedInUser=await User.findById(user._id).select("-password -refreshTokens")
+   
+
+   //to set cookies
+    const options={
+        httpOnly:true,
+        securte:true
+    }
+
+    return res
+          .status(200)
+          .cookie("accessToken",accessToken,options)
+          .cookie("refershTokens",refreshTokens,options)
+          .json(new ApiResponse(200,"Successfully logged in",{
+            user:loggedInUser,
+            accessToken:accessToken,
+            refreshTokens:refreshTokens,
+          }))
+})
+const logoutuser=asyncHandler(async(req,res)=>{
+  const user=await User.findById(req.user._id);
+  user.refreshTokens=undefined;
+  user.save({validationBeforeSave:false})
+  const options={
+    httpOnly:true,
+    securte:true
+  }
+  res.status(200).clearCookie("refreshTokens",options).clearCookie("accessToken",options).json(
+    new ApiResponse(200,"Loggedout successfully",{})
+  )
+
+})
+export {registerUser,loginUser,logoutuser} 
