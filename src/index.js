@@ -6,7 +6,7 @@ import {app} from './app.js'
 import express from 'express';
 
 
-dotenv.config({path:'./env'})
+dotenv.config({path:'./.env'})
 import dbconnect from './db/index.js';
 dbconnect()
 .then(()=>{

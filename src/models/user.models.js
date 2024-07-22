@@ -35,10 +35,11 @@ const userSchema=new mongoose.Schema({
         unique:true,
 
     },
-    covername:{
+    coverImage:{
         type: String,
         
-        unique:true,
+        
+        sparse:true,
 
     },
     password:{

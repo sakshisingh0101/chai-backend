@@ -39,7 +39,7 @@ const registerUser=asyncHandler( async (req,res)=>{
 
     //check for already exist
 
-    const existedUser=User.findOne({
+    const existedUser=await User.findOne({
 
         $or: [ { username },{ email }],
     }
@@ -50,9 +50,15 @@ const registerUser=asyncHandler( async (req,res)=>{
     }
 
     //files check and uploading
+    console.log(req.files)
 
     const avtarLocalPath=req.files?.avtar[0]?.path
-    const coverImagePath=req.files?.coverimage[0]?.path;
+    let coverImagePath
+    // const coverImagePath=req.files?.coverImage[0]?.path;
+    if(req.files&&Array.isArray(req.files.coverImage)&&req.files.coverImage.length>0)
+    {
+        coverImagePath=req.files?.coverImage[0]?.path;
+    }
     if(!avtarLocalPath)
     {
         throw new ApiError(409,"Avtar file is required");
@@ -62,9 +68,9 @@ const registerUser=asyncHandler( async (req,res)=>{
     
     
        const avtar=await  uploadFile(avtarLocalPath);
-    
-    
-      const coverImage= await uploadFile(coverImagePath);
+  
+       const coverImage= await uploadFile(coverImagePath);
+  
     
     if(!avtar)
     {  throw new ApiError(500,"Internal Server Error")
@@ -79,14 +85,14 @@ const registerUser=asyncHandler( async (req,res)=>{
         avtar:avtar.url,
         username:username.toLowerCase(),
         email,
-        coverimage:coverImage?.url||"",
+        coverImage:coverImage?.url||"",
         password,
         
         
     })
 
     const createdUser=await User.findById(user._id).select(
-        "-password -refreshTokens"
+        " -password -refreshTokens"
     )
     if(!createdUser)
     {
@@ -96,5 +102,5 @@ const registerUser=asyncHandler( async (req,res)=>{
     res.status(201).json(
        new ApiResponse(201,"Successfully registered",createdUser)
     )
-}
+})
 export {registerUser} 

@@ -19,11 +19,12 @@ const uploadFile=async (file)=>{
            }
        )
        if(uploadResult)
-       {
-        return uploadResult;
+       {  fs.unlinkSync(file);
+          return uploadResult;
        }
-       else{
-        return null;
+       else
+       {   
+          return null;
        }
       
       
