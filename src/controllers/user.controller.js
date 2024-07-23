@@ -223,4 +223,131 @@ const refreshAccessToken=asyncHandler(async (req,res)=>{
     new ApiResponse(200,"successfully refreshed access token",loginUser)
    )
 })
-export {registerUser,loginUser,logoutuser,refreshAccessToken} 
+
+
+const changeCurrentPassword=asyncHandler(async(req,res)=>{
+    const {oldpassword,newpassword}=req.body;
+    if(!(oldpassword||newpassword))
+    {
+        throw new ApiError(400,"Enter password");
+
+    }
+    const user=await User.findById(req.user?._id);
+    // if(!user)
+    // {
+    //     throw new ApiError(401,"User not found")
+    // }
+
+    const correctOldPassword=await user.isPassword(oldpassword);
+    if(!correctOldPassword)
+    {
+        throw new ApiError("401"," Enter Correct old password ");
+    }
+
+    user.password=newpassword;
+   await  user.save({validationBeforeSave:false});
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200,"Password Changed successfully",{}))
+})
+
+const getCurrentUser=asyncHandler(async(req,res)=>{
+    return res
+    .status(200)
+    .json(new ApiResponse(200,"current user found successfully",req.user))
+})
+
+const updateAccount=asyncHandler(async (req,res)=>{
+    const {fullname,username,email}=req.body;
+    if([fullname,username,email].some((field)=>field?.trim===""))
+    {
+        throw new ApiError(401,"fullname,username and email is required")
+    }
+
+    // const user=await User.findById(req.user?._id);
+    // user.fullname=ffullname
+    // user.email=email;
+    // user.username=username;
+    // await user.save({validationBeforeSave:false})
+    // const loggedInUser=await User.findById(user?._id).select("-password -refreshToken")
+
+    const user=await User.findByIdAndUpdate(req.user?._id,{
+        $set:{
+            fullname,
+            email,
+            username
+        }
+    },
+        {new:true //return updated user
+
+        }).select("-password -refreshTokens");
+    return res
+    .status(200)
+    .json(new ApiResponse(200,"Changes updated successfully",user));
+
+
+})
+
+const updateAvtar=asyncHandler(async(req,res)=>{
+    let updateAvtarLocalPath
+    if(req.file)
+    {
+       updateAvtarLocalPath=req.file.path;
+    }
+    if(!updateAvtarLocalPath)
+    {
+        throw new ApiError(400,"Avtar is required ")
+    }
+
+    const updatedAvtar=await uploadFile(updateAvtarLocalPath);
+    if(!updatedAvtar.url)
+    {
+        throw new ApiError(500,"upload failed")
+    }
+    const user=await User.findByIdAndUpdate(req.user?._id,{
+        $set:{
+            avtar:updatedAvtar?.url,
+        }
+    },{new:true}).select("-password -refreshTokens" )
+    return res
+    .status(200)
+    .json(new ApiResponse(200,"Avtar Updated Successfully",user))
+})
+
+const updatecoverImage=asyncHandler(async(req,res)=>{
+    let updateCoverImageLocalPath
+    if(req.file)
+    {
+        updateCoverImageLocalPath=req.file.path;
+    }
+    if(!updateCoverImageLocalPath)
+    {
+        throw new ApiError(400,"CoverImage is required ")
+    }
+
+    const updatedCoverImage=await uploadFile(updateAvtarLocalPath);
+    if(!updatedCoverImage.url)
+    {
+        throw new ApiError(500,"upload failed")
+    }
+    const user=await User.findByIdAndUpdate(req.user?._id,{
+        $set:{
+            coverImage:updatedCoverImage.url
+        }
+    },{new:true}).select("-password -refreshTokens" )
+    return res
+    .status(200)
+    .json(new ApiResponse(200,"CoverImage Updated Successfully",user))
+})
+export {
+    registerUser,
+    loginUser,
+    logoutuser,
+    refreshAccessToken,
+    changeCurrentPassword,
+    getCurrentUser,
+    updateAccount,
+    updateAvtar,
+    updatecoverImage
+}
