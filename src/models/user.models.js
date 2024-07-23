@@ -66,14 +66,17 @@ const userSchema=new mongoose.Schema({
 
 userSchema.pre("save",async function(next){
  if(this.isModified("password"))
- {
-    this.password=await bcrypt.hash(this.password,10);
+ {  console.log(this.password)
+    const salt = await bcrypt.genSalt(10);
+    this.password=await bcrypt.hash(this.password,salt);
     next();
  }
 })
 
 userSchema.methods.isPassword=async function(password){
     const ispassword=await bcrypt.compare(password,this.password);
+    console.log(password)
+    console.log(this.password)
     return ispassword;
 }
 userSchema.methods.generateAccessToken=function(){
