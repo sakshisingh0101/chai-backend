@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/apiError.js";
 import { User } from "../models/user.models.js";
-import { uploadFile } from "../utils/cloudinary.js";
+import { deleteFile, uploadFile } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import  jwt from "jsonwebtoken";
@@ -305,6 +305,16 @@ const updateAvtar=asyncHandler(async(req,res)=>{
     {
         throw new ApiError(500,"upload failed")
     }
+
+    const oldAvtar=await User.findById(req.user?._id).avtar;
+    const avtarSplit=oldAvtar.split("/")
+    const publicIdextension=avtarSplit[avtarSplit.length-1];
+    const public_id=publicIdextension.split(".")[0];
+    const deleteResult=await deleteFile(public_id);
+    if(!deleteResult.result==="ok")
+    {
+           throw new ApiError(401,"deletion failed")
+    }
     const user=await User.findByIdAndUpdate(req.user?._id,{
         $set:{
             avtar:updatedAvtar?.url,
@@ -330,6 +340,15 @@ const updatecoverImage=asyncHandler(async(req,res)=>{
     if(!updatedCoverImage.url)
     {
         throw new ApiError(500,"upload failed")
+    }
+    const oldcoverimage=await User.findById(req.user?._id).coverImage;
+    const coverimagesplit=oldcoverimage.split("/")
+    const publicIdextension=coverimagesplit[coverimagesplit.length-1];
+    const public_id=publicIdextension.split(".")[0];
+    const deleteResult=await deleteFile(public_id);
+    if(!deleteResult.result==="ok")
+    {
+           throw new ApiError(401,"deletion failed")
     }
     const user=await User.findByIdAndUpdate(req.user?._id,{
         $set:{
